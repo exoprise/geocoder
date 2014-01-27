@@ -53,6 +53,7 @@ module Geocoder
       :ip_lookup,
       :language,
       :http_headers,
+      :http_auth,
       :use_https,
       :http_proxy,
       :https_proxy,
@@ -96,6 +97,7 @@ module Geocoder
       @data[:ip_lookup]    = :freegeoip  # name of IP address geocoding service (symbol)
       @data[:language]     = :en         # ISO-639 language code
       @data[:http_headers] = {}          # HTTP headers for lookup
+      @data[:http_auth]    = {}          # Easier way of specigin auth for basic auth (maxmind)
       @data[:use_https]    = false       # use HTTPS for lookup requests? (if supported)
       @data[:http_proxy]   = nil         # HTTP proxy server (user:pass@host:port)
       @data[:https_proxy]  = nil         # HTTPS proxy server (user:pass@host:port)

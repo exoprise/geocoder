@@ -4,68 +4,6 @@ module Geocoder::Result
   class Maxmind < Base
 
     ##
-    # Hash mapping service names to names of returned fields.
-    #
-    def self.field_names
-      {
-        :country => [
-          :country_code,
-          :error
-        ],
-
-        :city => [
-          :country_code,
-          :region_code,
-          :city_name,
-          :latitude,
-          :longitude,
-          :error
-        ],
-
-        :city_isp_org => [
-          :country_code,
-          :region_code,
-          :city_name,
-          :postal_code,
-          :latitude,
-          :longitude,
-          :metro_code,
-          :area_code,
-          :isp_name,
-          :organization_name,
-          :error
-        ],
-
-        :omni => [
-          :country_code,
-          :country_name,
-          :region_code,
-          :region_name,
-          :city_name,
-          :latitude,
-          :longitude,
-          :metro_code,
-          :area_code,
-          :time_zone,
-          :continent_code,
-          :postal_code,
-          :isp_name,
-          :organization_name,
-          :domain,
-          :as_number,
-          :netspeed,
-          :user_type,
-          :accuracy_radius,
-          :country_confidence_factor,
-          :city_confidence_factor,
-          :region_confidence_factor,
-          :postal_confidence_factor,
-          :error
-        ]
-      }
-    end
-
-    ##
     # Name of the MaxMind service being used.
     #
     def service_name
@@ -75,16 +13,20 @@ module Geocoder::Result
       Geocoder.config.maxmind[:service]
     end
 
-    def field_names
-      self.class.field_names[service_name]
-    end
+    # now its JSON return just provide some simple access
+    #def data_hash
+    #  @data_hash ||= Hash[*field_names.zip(@data).flatten]
+    #end
 
-    def data_hash
-      @data_hash ||= Hash[*field_names.zip(@data).flatten]
+    #NOTE: i really don't love this class and implementation but fine for now
+    # to contribute back we would need to rationalize
+
+    def location
+      @data['location']
     end
 
     def coordinates
-      [data_hash[:latitude].to_f, data_hash[:longitude].to_f]
+      [location['latitude'].to_f, location['longitude'].to_f]
     end
 
     def address(format = :full)
@@ -93,39 +35,60 @@ module Geocoder::Result
     end
 
     def city
-      data_hash[:city_name]
+      @data['city']
     end
 
-    def state # not given by MaxMind
-      data_hash[:region_name] || data_hash[:region_code]
+    def city_name
+      city['names']['en']
+    end
+
+    def subdivisions
+      @data['subdivisions']
+    end
+
+    def state
+      #data_hash[:region_name] || data_hash[:region_code]
+      subdivisions['names']['en']
     end
 
     def state_code
-      data_hash[:region_code]
+      @data['subdivisions']['iso_code']
     end
 
     def country #not given by MaxMind
-      data_hash[:country_name] || data_hash[:country_code]
+      @data['country']
     end
 
     def country_code
-      data_hash[:country_code]
+      country['iso_code']
+    end
+
+    def postal
+      @data['postal']
     end
 
     def postal_code
-      data_hash[:postal_code]
+      postal['code']
+    end
+
+    def traits
+      @data['traits']
+    end
+
+    def queries_remaining
+      @data['maxmind']['queries_remaining']
     end
 
     def method_missing(method, *args, &block)
-      if field_names.include?(method)
-        data_hash[method]
+      if @data.has_key(method)
+        return @data[method]
       else
-        super
+       super
       end
     end
 
     def respond_to?(method)
-      if field_names.include?(method)
+      if @data.has_key(method)
         true
       else
         super

@@ -231,10 +231,18 @@ module Geocoder
           # client.use_ssl = true if configuration.use_https
           # client.get(uri.request_uri, configuration.http_headers)
 
-          http_client.start(uri.host, uri.port) do |client|
-            client.use_ssl = true if configuration.use_https
+          # can't set use_ssl after call to start
+          opts = { :use_ssl => configuration.use_https }
+
+          http_client.start(uri.host, uri.port, opts) do |client|
+            #client.use_ssl = true if configuration.use_https
             req = Net::HTTP::Get.new(uri.request_uri, configuration.http_headers)
-            req.basic_auth(uri.user, uri.password) if uri.user and uri.password
+            #specified on the URI?
+            if uri.user and uri.password
+              req.basic_auth(uri.user, uri.password)
+            elsif configuration.http_auth.present?
+              req.basic_auth(configuration.http_auth[:user], configuration.http_auth[:password])
+            end
             client.request(req)
           end
         end

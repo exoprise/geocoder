@@ -10,7 +10,7 @@ module Geocoder::Lookup
     end
 
     def query_url(query)
-      "#{protocol}://geoip.maxmind.com/#{service_code}?" + url_query_string(query)
+      "#{protocol}://geoip.maxmind.com/#{service_code}/" + query.sanitized_text #url_query_string(query)
     end
 
     private # ---------------------------------------------------------------
@@ -35,24 +35,24 @@ module Geocoder::Lookup
       services[configured_service!]
     end
 
-    def service_response_fields_count
-      Geocoder::Result::Maxmind.field_names[configured_service!].size
-    end
+    #def service_response_fields_count
+    #  Geocoder::Result::Maxmind.field_names[configured_service!].size
+    #end
 
-    def data_contains_error?(parsed_data)
-      # if all fields given then there is an error
-      parsed_data.size == service_response_fields_count and !parsed_data.last.nil?
-    end
+    #def data_contains_error?(parsed_data)
+    #  # if all fields given then there is an error
+    #  parsed_data.size == service_response_fields_count and !parsed_data.last.nil?
+    #end
 
     ##
     # Service names mapped to code used in URL.
     #
     def services
       {
-        :country => "a",
-        :city => "b",
-        :city_isp_org => "f",
-        :omni => "e"
+        :country => "geoip/v2.0/country",
+        :city => "geoip/v2.0/city",
+        :city_isp_org => "geoip/v2.0/city_isp_org",
+        :omni => "geoip/v2.0/omni"
       }
     end
 
@@ -60,29 +60,33 @@ module Geocoder::Lookup
       # don't look up a loopback address, just return the stored result
       return [reserved_result] if query.loopback_ip_address?
       doc = fetch_data(query)
-      if doc and doc.is_a?(Array)
-        if !data_contains_error?(doc)
+      if doc and doc.is_a?(Hash)
+        if !doc.has_key?('error')
           return [doc]
-        elsif doc.last == "INVALID_LICENSE_KEY"
+        elsif doc['error'] == "INVALID_LICENSE_KEY"
           raise_error(Geocoder::InvalidApiKey) || warn("Invalid MaxMind API key.")
+        else
+          raise_error(Geocoder::Error, doc['error'])
         end
       end
-      return []
+      return [{}]
     end
 
-    def parse_raw_data(raw_data)
-      CSV.parse_line raw_data
-    end
+    #def parse_raw_data(raw_data)
+    #  CSV.parse_line raw_data
+    #end
 
     def reserved_result
-      ",,,,0,0,0,0,,,".split(",")
+      {}
     end
 
-    def query_url_params(query)
-      {
-        :l => configuration.api_key,
-        :i => query.sanitized_text
-      }.merge(super)
-    end
+    ##not used anymore, maxmind restful
+    #def query_url_params(query)
+    #  #now its restful
+    #  {
+    #    :l => configuration.api_key,
+    #    :i => query.sanitized_text
+    #  }.merge(super)
+    #end
   end
 end
