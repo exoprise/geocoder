@@ -80,7 +80,7 @@ module Geocoder::Result
     end
 
     def method_missing(method, *args, &block)
-      if @data.has_key(method)
+      if @data.has_key?(method)
         return @data[method]
       else
        super
@@ -88,7 +88,7 @@ module Geocoder::Result
     end
 
     def respond_to?(method)
-      if @data.has_key(method)
+      if @data.has_key?(method)
         true
       else
         super
